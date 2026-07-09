@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLAVOR ARCHIVE - Gelato Gallery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-cream: #FAF8F5;   
+            --card-bg: #FFFFFF;    
+            --text-main: #333333;  
+            --text-light: #888888; 
+            --shadow-soft: 0 15px 35px rgba(0, 0, 0, 0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-cream);
+            color: var(--text-main);
+            padding: 24px;
+            overflow-x: hidden; 
+        }
+
+        #intro-screen {
+            position: fixed;
+            inset: 0; 
+            background-color: #FFFFFF;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        #intro-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .intro-text {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 3.5rem;
+            letter-spacing: 8px;
+            color: var(--text-main);
+            text-transform: uppercase;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: textFadeIn 2s ease forwards 0.5s;
+        }
+
+        @keyframes textFadeIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+        h1 { font-family: 'Playfair Display', serif; font-size: 20px; letter-spacing: 4px; color: var(--text-main); }
+
+        #music-toggle {
+            position: fixed; top: 24px; right: 24px; z-index: 10000; 
+            width: 40px; height: 40px; background-color: #ffffff;
+            border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        #music-toggle:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+        .music-icon { width: 18px; height: 18px; fill: var(--text-main); transition: opacity 0.3s ease; }
+
+        .gallery { column-count: 3; column-gap: 20px; max-width: 1000px; margin: 0 auto; }
+        @media (max-width: 800px) { .gallery { column-count: 2; } }
+        @media (max-width: 500px) { .gallery { column-count: 1; } }
+
+        .card {
+            background-color: var(--card-bg); border-radius: 20px; cursor: pointer;
+            padding: 20px; margin-bottom: 20px; break-inside: avoid;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transform: translateY(80px) scale(0.9);
+            transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+        }
+        .card:hover { transform: translateY(-5px) scale(1.02) !important; box-shadow: var(--shadow-soft); }
+        .card-img { width: 100%; height: auto; background-color: #FFFFFF; contain: paint; }
+
+        .gallery.loaded .card { opacity: 1; transform: translateY(0) scale(1); }
+        .card:nth-child(1) { transition-delay: 0.1s; }
+        .card:nth-child(2) { transition-delay: 0.2s; }
+        .card:nth-child(3) { transition-delay: 0.3s; }
+        .card:nth-child(4) { transition-delay: 0.4s; }
+        .card:nth-child(5) { transition-delay: 0.5s; }
+        .card:nth-child(6) { transition-delay: 0.6s; }
+        .card:nth-child(7) { transition-delay: 0.7s; }
+        .card:nth-child(8) { transition-delay: 0.8s; }
+
+        .detail-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(250, 248, 245, 0.95); backdrop-filter: blur(15px);
+            z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; 
+        }
+        .detail-modal.active { opacity: 1; pointer-events: auto; }
+        .detail-content {
+            width: 100%; max-width: 450px; background-color: var(--card-bg); border-radius: 30px;
+            max-height: 85vh; overflow-y: auto; scrollbar-width: none; box-shadow: 0 30px 60px rgba(0,0,0,0.12);
+            position: relative; cursor: default; opacity: 0; transform: translateY(20px);
+            transition: opacity 0.3s ease 0.1s, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
+        }
+        .detail-content::-webkit-scrollbar { display: none; }
+        .detail-modal.active .detail-content { opacity: 1; transform: translateY(0); }
+        .detail-img {
+            width: 100%; height: 60vh; object-fit: contain; background-color: #FFFFFF;
+            padding: 40px; border-radius: 30px 30px 0 0; display: block; flex-shrink: 0;
+        }
+        .detail-text { padding: 30px 30px 50px; text-align: center; background-color: #fff; }
+        .detail-title { font-size: 24px; font-weight: 600; margin-bottom: 16px; color: var(--text-main); }
+        .detail-desc { font-size: 15px; line-height: 1.8; color: var(--text-light); }
+
+        ::view-transition-group(hero-image) { border-radius: 20px; overflow: hidden; background-color: #FFFFFF; }
+        ::view-transition-old(hero-image), ::view-transition-new(hero-image) {
+            animation-duration: 0.5s; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+            height: 100%; width: 100%; object-fit: contain; border-radius: inherit; background-color: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bgmAudio" autoplay loop>
+        <source src="M800001rAiNu459FiR.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="music-toggle" title="Toggle Music">
+        <svg id="icon-play" class="music-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+        </svg>
+        <svg id="icon-pause" class="music-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.73v2.06c2.89.86 5 3.54 5 6.67zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+        </svg>
+    </div>
+
+    <div id="intro-screen">
+        <div class="intro-text">FLAVOR ARCHIVE</div>
+    </div>
+
+    <header>
+        <h1>FLAVOR ARCHIVE</h1>
+    </header>
+
+    <div class="gallery" id="gallery">
+        <div class="card" onclick="openDetail(this, '1.jpg', '初恋草莓脆', '最经典的草莓风味。大块真实的果肉颗粒隐藏在绵密的冰淇淋中，酸甜交织，是永不过时的清凉选择。')">
+            <img src="1.jpg" class="card-img" alt="草莓">
+        </div>
+        <div class="card" onclick="openDetail(this, '2.jpg', '极地薄荷碎', '爱它的人会疯狂着迷。初雪般的薄荷清凉直击味蕾，伴随着黑巧克力碎粒在舌尖化开的微苦，极度解腻。')">
+            <img src="2.jpg" class="card-img" alt="薄荷">
+        </div>
+        <div class="card" onclick="openDetail(this, '3.jpg', '野生蓝莓芝士', '饱满的整颗蓝莓镶嵌在浓郁的芝士雪糕基底上。果汁的爆裂感与芝士的醇厚完美融合，层次极度丰富。')">
+            <img src="3.jpg" class="card-img" alt="蓝莓">
+        </div>
+        <div class="card" onclick="openDetail(this, '4.jpg', '恶魔辣红莓', '极具挑战性的前卫口味！甜美的覆盆子基调中，暗藏着真实的辣椒萃取精华。入口先甜后辣，极其上头。')">
+            <img src="4.jpg" class="card-img" alt="辣椒">
+        </div>
+        <div class="card" onclick="openDetail(this, '5.jpg', '树莓香草双旋', '如雕塑般的完美拉花。顶级马达加斯加香草的温润，与鲜榨树莓果酱的明艳酸甜在杯中交汇。')">
+            <img src="5.jpg" class="card-img" alt="双旋">
+        </div>
+        <div class="card" onclick="openDetail(this, '6.jpg', '黑巧莓果碎', '浓郁的莓果冰淇淋中揉入大块黑巧克力块，果酸与醇苦在舌尖碰撞出令人惊喜的平衡感。')">
+            <img src="6.jpg" class="card-img" alt="黑巧莓果">
+        </div>
+        <div class="card" onclick="openDetail(this, '7.jpg', '云朵牛乳软冰', '极致纯粹的牛乳软冰，宛如云朵般轻盈绵密。保留了最本真、最浓郁的奶香，入口即化。')">
+            <img src="7.jpg" class="card-img" alt="云朵牛乳">
+        </div>
+        <div class="card" onclick="openDetail(this, '8.jpg', '西西里开心果', '选用优质西西里开心果，每一口都能感受到坚果的醇厚香气与真实的碎粒口感，高级且不甜腻。')">
+            <img src="8.jpg" class="card-img" alt="开心果">
+        </div>
+    </div>
+
+    <div class="detail-modal" id="detailModal">
+        <div class="detail-content" id="detailContentScroll">
+            <img src="" class="detail-img" id="detailImg" alt="详情图">
+            <div class="detail-text">
+                <h2 class="detail-title" id="detailTitle">口味标题</h2>
+                <p class="detail-desc" id="detailDesc">口味详细描述...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 核心逻辑 1：入场动画与 BGM 控制
+        // ==========================================
+        const introScreen = document.getElementById('intro-screen');
+        const bgmAudio = document.getElementById('bgmAudio');
+        const gallery = document.getElementById('gallery');
+        const musicToggle = document.getElementById('music-toggle');
+        const iconPlay = document.getElementById('icon-play');
+        const iconPause = document.getElementById('icon-pause');
+        
+        // 【关键修改】默认状态设为 true，默认要求播放
+        let isPlaying = true;
+
+        // 更新音乐图标状态的函数
+        function updateMusicIcon() {
+            if (isPlaying) {
+                iconPlay.style.display = 'block';
+                iconPause.style.display = 'none';
+            } else {
+                iconPlay.style.display = 'none';
+                iconPause.style.display = 'block';
+            }
+        }
+
+        // 尝试在页面加载时静默触发一次
+        window.addEventListener('DOMContentLoaded', () => {
+            bgmAudio.play().catch(e => {
+                // 如果被浏览器拦截，没关系，图标依然保持播放状态，等待用户点击入场
+                console.log('自动播放等待用户首次点击交互');
+            });
+        });
+
+        // 点击全屏遮罩逻辑 (用户的第一次真实交互，必定能解锁音频播放)
+        introScreen.addEventListener('click', () => {
+            // 如果处于“想要播放”的状态，趁着用户点击赶紧强制播放
+            if (isPlaying) {
+                bgmAudio.play().catch(e => console.log('播放失败', e));
+            }
+            
+            introScreen.classList.add('hidden');
+            setTimeout(() => {
+                gallery.classList.add('loaded');
+            }, 300);
+        });
+
+        // 右上角音乐开关点击逻辑
+        musicToggle.addEventListener('click', () => {
+            if (isPlaying) {
+                bgmAudio.pause();
+                isPlaying = false;
+            } else {
+                bgmAudio.play();
+                isPlaying = true;
+            }
+            updateMusicIcon();
+        });
+
+        // ==========================================
+        // 核心逻辑 2：视图转场与弹窗 (保持不变)
+        // ==========================================
+        const modal = document.getElementById('detailModal');
+        const detailTitle = document.getElementById('detailTitle');
+        const detailDesc = document.getElementById('detailDesc');
+        const detailImg = document.getElementById('detailImg');
+        const detailContentScroll = document.getElementById('detailContentScroll');
+        let lastClickedThumbnail = null; 
+
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function playSoftPop() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.type = 'sine'; 
+            const now = audioCtx.currentTime;
+            osc.frequency.setValueAtTime(500, now);
+            osc.frequency.exponentialRampToValueAtTime(350, now + 0.1);
+            gainNode.gain.setValueAtTime(0, now); 
+            gainNode.gain.linearRampToValueAtTime(0.25, now + 0.02); 
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+            osc.start(now);
+            osc.stop(now + 0.17);
+        }
+
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) { closeDetail(); }
+        });
+
+        function openDetail(cardElement, imgSrc, title, desc) {
+            playSoftPop(); 
+            lastClickedThumbnail = cardElement.querySelector('.card-img');
+
+            if (!document.startViewTransition) {
+                updateModalContent(imgSrc, title, desc);
+                modal.classList.add('active');
+                return;
+            }
+
+            lastClickedThumbnail.style.viewTransitionName = 'hero-image';
+
+            document.startViewTransition(() => {
+                lastClickedThumbnail.style.viewTransitionName = 'none';
+                detailImg.style.viewTransitionName = 'hero-image';
+                updateModalContent(imgSrc, title, desc);
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden'; 
+                detailContentScroll.scrollTop = 0;
+            });
+        }
+
+        function closeDetail() {
+            playSoftPop(); 
+            if (!document.startViewTransition) {
+                modal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+                return;
+            }
+
+            const transition = document.startViewTransition(() => {
+                detailImg.style.viewTransitionName = 'none';
+                if (lastClickedThumbnail) { lastClickedThumbnail.style.viewTransitionName = 'hero-image'; }
+                modal.classList.remove('active');
+                document.body.style.overflow = 'auto'; 
+            });
+
+            transition.finished.then(() => {
+                if (lastClickedThumbnail) { lastClickedThumbnail.style.viewTransitionName = 'none'; }
+            });
+        }
+
+        function updateModalContent(imgSrc, title, desc) {
+            detailImg.src = imgSrc;
+            detailTitle.innerText = title;
+            detailDesc.innerText = desc;
+        }
+    </script>
+</body>
+</html>
